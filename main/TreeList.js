@@ -74,7 +74,7 @@ export class TreeList{
         this.#tail = nodeToBeAdded;
 
         //index of current middle pointer
-        let currentIndex = Math.floor((this.size - 1) / 2);
+        let currentIndex = Math.floor((this.#size - 1) / 2);
 
         this.#size += 1;
 
@@ -93,15 +93,16 @@ export class TreeList{
             }else{
                 this.#addPointers(this.#tail, this.#tail.prevNode, 0, this.#size-1, currentIndex, this.#size-1, 0, this.#size-2, currentIndex);
             }
-        }else if (this.size > this.frequency){
+        }else if (this.#size > this.#frequency){
             this.#updatePointers(this.#tail, this.#tail.prevNode, 0, this.#size-1, currentIndex, this.#size-1, 0, this.#size-2, currentIndex);
         }
     }
 
     #updatePointers(parentPointer, currentPointer, lowIndex, highIndex, currentIndex, parentIndex, originalLow, originalHigh, originalIndex){
         let range = lowIndex + highIndex;
-
+       
         if(currentIndex !== Math.floor(range / 2)){
+    
             let newPointer = currentPointer.next;
             newPointer.nextNode = currentPointer.nextNode;
             newPointer.prevNode = currentPointer.prevNode;
@@ -112,7 +113,8 @@ export class TreeList{
             currentPointer = currentPointer.next;
             currentIndex = currentIndex + 1;
 
-            if(currentIndex === Math.floor((this.size - 1) / 2)){
+            if(currentIndex === Math.floor((this.#size - 1) / 2)){
+
                 this.#head.nextNode = newPointer;
                 this.#tail.prevNode = newPointer;
             }else if(currentIndex <= parentIndex){
@@ -162,7 +164,7 @@ export class TreeList{
             currentPointer = currentPointer.next;
             currentIndex = currentIndex + 1;
 
-            if(currentIndex === Math.floor((this.size - 1) / 2)) {
+            if(currentIndex === Math.floor((this.#size - 1) / 2)) {
                 this.#head.nextNode = newPointer;
                 this.#tail.prevNode = newPointer;
             }else if(currentIndex <= parentIndex){
