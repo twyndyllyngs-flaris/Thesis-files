@@ -13,5 +13,16 @@ treelist.add(7)
 treelist.add(8)
 treelist.add(9)
 treelist.add(10)
+treelist.add(11)
+treelist.add(12)
+treelist.add(13)
+treelist.add(14)
+treelist.add(15)
+
+//treelist.print()
+treelist.remove(14)
+
+console.log(treelist.size())
 
 treelist.print()
+

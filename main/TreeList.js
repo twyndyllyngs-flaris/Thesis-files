@@ -57,6 +57,14 @@ export class TreeList{
         return node.prevNode === undefined && node.nextNode === undefined;
     }
 
+    #isInRange(index, lower, higher){
+        return index >= lower && index <= higher;
+    }
+
+    #lowerPointerIsCloser(index, lowerIndex, higherIndex){
+        return (index - lowerIndex) < (higherIndex - index);
+    }
+
     // add functions
     add(item){
         let nodeToBeAdded = new this.#Node(item);
@@ -212,6 +220,257 @@ export class TreeList{
             }
 
             parent.nextNode = node;
+        }
+    }
+
+    // get functions
+    get(index){
+        if(this.isEmpty()){
+            throw new Error('List is Empty')
+        }
+
+        if(index < 0 || index >= this.#size){
+            throw new Error('Index is out of bounds')
+        }
+
+        return this.#getNode(index).item;
+    }
+
+    #getNode(index){
+        let returnObject = this.#getClosest(index);
+
+        let pointer = returnObject.node;
+        let closestIndex = returnObject.index;
+        let isLowerClosest = returnObject.isLowerClosest;
+
+        if(isLowerClosest){
+            for(let i = closestIndex; i < index; i++){
+                pointer = pointer.next;
+            }
+        }else{
+            for(let i = closestIndex; i > index; i--){
+                pointer = pointer.prev;
+            }
+        }
+
+        return pointer;
+    }
+
+    #getClosest(index){
+        let lowerPointer = this.#head;
+        let higherPointer = this.#tail;
+        let nextPointer = lowerPointer.nextNode;
+        let lowerIndex = 0;
+        let higherIndex = this.#size-1;
+
+        while(this.#isInRange(index, lowerIndex, higherIndex) && nextPointer !== undefined){
+            let sumRange = lowerIndex + higherIndex;
+
+            if(this.#lowerPointerIsCloser(index, lowerIndex, higherIndex)){
+                higherPointer = nextPointer;
+                nextPointer = nextPointer.prevNode;
+
+                higherIndex = Math.floor(sumRange / 2);
+
+                if(index === lowerIndex) {
+                    return {node: higherPointer, index: higherIndex, isLowerClosest: false};
+                }
+            }else{
+                lowerPointer = nextPointer;
+                nextPointer = nextPointer.nextNode;
+
+                lowerIndex = Math.floor(sumRange / 2);
+
+                if(index === higherIndex){
+                    return {node: higherPointer, index: higherIndex, isLowerClosest: false};
+                }
+            }
+        }
+
+        if(this.#lowerPointerIsCloser(index, lowerIndex, higherIndex)){
+            return {node: lowerPointer, index: lowerIndex, isLowerClosest: true};
+        } else{
+            return {node: higherPointer, index: higherIndex, isLowerClosest: false};
+        }
+
+    }
+
+    //remove functions
+    remove(index){
+        if(this.isEmpty()){
+            throw new Error('List is Empty')
+        }
+
+        if(index < 0 || index >= this.#size){
+            throw new Error('Index is out of bounds')
+        }
+
+        let details = this.#getNodeDetails(index);
+        let nodeToBeDeleted = details.node;
+        let next = nodeToBeDeleted.next;
+        let prev = nodeToBeDeleted.prev;
+        let nextNode = nodeToBeDeleted.nextNode;
+        let prevNode = nodeToBeDeleted.prevNode;
+        let parent = details.parent;
+        let lowIndex = details.originalLower;
+        let highIndex = details.originalHigher;
+        //let isLowerClosest = details.isLowerClosest;
+
+        if(this.#size === 1){
+            this.#head = undefined;
+            this.#tail = undefined;
+        } else if(nodeToBeDeleted === this.#head){
+            next.prev = undefined;
+            next.nextNode = this.#head.nextNode;
+            this.#head = next;
+        }else if(nodeToBeDeleted === this.#tail){
+            prev.next = undefined;
+            prev.prevNode = this.#tail.prevNode;
+            this.#tail = prev;
+        }else if(parent.prevNode === nodeToBeDeleted || parent.nextNode === nodeToBeDeleted){
+            next.prev = prev;
+            prev.next = next;
+
+            let newMiddleIndex = Math.floor((lowIndex + highIndex - 1 ) / 2);
+
+            if(newMiddleIndex !== index){
+                // move left
+                prev.nextNode = nextNode;
+                prev.prevNode = prevNode;
+
+                if(index === (this.#size-1) / 2){
+                    // index is the first middle, have to move both head and tail pointer
+                    this.#head.nextNode = prev;
+                    this.#tail.prevNode = prev;
+                }else if(parent.prevNode === nodeToBeDeleted){
+                    parent.prevNode = prev;
+                }else{
+                    parent.nextNode = prev;
+                }
+            }else{
+                // move right
+                next.nextNode = nextNode;
+                next.prevNode = prevNode;
+
+                if(index === (this.#size-1) / 2){
+                    // index is the first middle, have to move both head and tail pointer
+                    this.#head.nextNode = next;
+                    this.#tail.prevNode = next;
+                }else if(parent.prevNode === nodeToBeDeleted){
+                    parent.prevNode = next;
+                }else{
+                    parent.nextNode = next;
+                }
+            }
+        }else{
+            next.prev = prev;
+            prev.next = next;
+        }
+
+        let isTimeToRemove = this.#isTimeToAdd();
+
+        this.#size -= 1;
+
+        if(isTimeToRemove){
+            if(this.#size === this.#frequency){
+                this.#head.nextNode = undefined;
+                this.#tail.prevNode = undefined;
+            }else{
+                this.#removePointers(this.#head.nextNode);
+            }
+        }
+
+        return nodeToBeDeleted.item;
+    }
+
+    #removePointers(currentPointer){
+        // recursions
+        if(currentPointer.prevNode !== undefined && currentPointer.prevNode.prevNode !== undefined){
+            this.#removePointers(currentPointer.prevNode);
+        }else{
+            currentPointer.prevNode = undefined;
+        }
+
+        if(currentPointer.nextNode !== undefined && currentPointer.nextNode.nextNode !== undefined){
+            this.#removePointers(currentPointer.nextNode);
+        }else{
+            currentPointer.nextNode = undefined;
+        }
+    }
+
+    #getNodeDetails(index){
+        let returnObject = this.#getClosestNodeDetails(index);
+
+        let closestNode = returnObject.node;
+        let isLowerClosest = returnObject.isLowerClosest;
+
+        if(isLowerClosest){
+            let closestIndex = returnObject.lowerIndex;
+            for(let i = closestIndex; i < index; i++){
+                closestNode = closestNode.next;
+            }
+        }else{
+            let closestIndex = returnObject.higherIndex;
+            for(let i = closestIndex; i > index; i--){
+                closestNode = closestNode.prev;
+            }
+        }
+
+        returnObject.node = closestNode;
+
+        return returnObject;
+    }
+
+    #getClosestNodeDetails(index){
+        let lowerPointer = this.#head;
+        let higherPointer = this.#tail;
+        let nextPointer = lowerPointer.nextNode;
+        let parent = this.#head;
+        let lowerIndex = 0;
+        let higherIndex = this.#size-1;
+        let originalLower = lowerIndex;
+        let originalHigher = higherIndex;
+
+        while(this.#isInRange(index, lowerIndex, higherIndex) && nextPointer !== undefined){
+            let sumRange = lowerIndex + higherIndex;
+
+            if(this.#lowerPointerIsCloser(index, lowerIndex, higherIndex)){
+                if(index === lowerIndex) {
+                    if(parent === this.#head){
+                        parent = higherPointer;
+                    }
+                    return {node: lowerPointer, parent, originalLower, originalHigher, lowerIndex, higherIndex, isLowerClosest: true};
+                }
+
+                parent = higherPointer;
+                higherPointer = nextPointer;
+                nextPointer = nextPointer.prevNode;
+
+                originalHigher = higherIndex;
+                originalLower = lowerIndex;
+                higherIndex = Math.floor(sumRange / 2);
+            }else{
+                if(index === higherIndex){
+                    if(parent === this.#tail){
+                        parent = lowerPointer;
+                    }
+                    return {node: higherPointer, parent, originalLower, originalHigher, lowerIndex, higherIndex, isLowerClosest: false};
+                }
+
+                parent = lowerPointer;
+                lowerPointer = nextPointer;
+                nextPointer = nextPointer.nextNode;
+
+                originalLower = lowerIndex;
+                originalHigher = higherIndex;
+                lowerIndex = Math.floor(sumRange / 2);
+            }
+        }
+
+        if(this.#lowerPointerIsCloser(index, lowerIndex, higherIndex)){
+            return {node: lowerPointer, parent, originalLower, originalHigher, lowerIndex, higherIndex, isLowerClosest: true};
+        } else{
+            return {node: higherPointer, parent, originalLower, originalHigher, lowerIndex, higherIndex, isLowerClosest: false};
         }
     }
 }
